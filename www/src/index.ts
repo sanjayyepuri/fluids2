@@ -26,9 +26,9 @@ const light = new THREE.DirectionalLight(0xffffff);
 light.position.set(0, 0, 1);
 
 const geometry = new THREE.TorusKnotGeometry(
-    config.radius, 
-    config.tube, 
-    config.tubularSegments, 
+    config.radius,
+    config.tube,
+    config.tubularSegments,
     config.radialSegments
 );
 
