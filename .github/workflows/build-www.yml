@@ -23,7 +23,16 @@ jobs:
         run: |
           wasm-pack build
       
-      # - name: Build Site
-      #   run: |
-      #     cd www
-      #     npm run build
+      - name: Build Site
+        run: |
+          cd www
+          npm run build
+
+      - name: Deploy
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: gh-pages
+          build_dir: www/dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
