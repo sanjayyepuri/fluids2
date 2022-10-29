@@ -1,5 +1,6 @@
-/target
-/dist
-/node_modules
+target
+dist
+node_modules
+pkg
 
 .DS_Store

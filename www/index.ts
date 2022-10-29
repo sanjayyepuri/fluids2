@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import * as fluids from "fluids2";
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
@@ -18,8 +19,8 @@ camera.position.z = 5;
 
 function animate() {
     requestAnimationFrame(animate);
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+    cube.rotation.x = fluids.add(cube.rotation.x, 0.01);
+    cube.rotation.y = fluids.add(cube.rotation.y, 0.01);
     renderer.render(scene, camera);
 }
 

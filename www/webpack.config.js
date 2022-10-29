@@ -2,7 +2,7 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-    entry: "./src/index.ts",
+    entry: "./index.ts",
     module: {
         rules: [
             {
@@ -20,7 +20,10 @@ module.exports = {
         clean: true,
     },
     plugins:[
-        new HtmlWebpackPlugin({title: "Fluids2", template: "src/index.html"})
+        new HtmlWebpackPlugin({title: "Fluids2", template: "./index.html"})
     ],
+    experiments: {
+        asyncWebAssembly: true,
+    },
     mode: "development",
 };
