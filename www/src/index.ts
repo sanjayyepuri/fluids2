@@ -22,24 +22,28 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const light = new THREE.DirectionalLight( 0xffffff );
-				light.position.set( 0, 0, 1 );
-				scene.add( light );
+const light = new THREE.DirectionalLight(0xffffff);
+light.position.set(0, 0, 1);
 
-const geometry = new THREE.TorusKnotGeometry(config.radius, 
-    config.tube, config.tubularSegments, config.radialSegments);
+const geometry = new THREE.TorusKnotGeometry(
+    config.radius, 
+    config.tube, 
+    config.tubularSegments, 
+    config.radialSegments
+);
+
 const material = new THREE.MeshToonMaterial(
     {color: 0x90C2E7}
 );
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+const torusKnot = new THREE.Mesh(geometry, material);
+scene.add(torusKnot);
 scene.add(light);
 camera.position.z = 5;
 
 function animate() {
     requestAnimationFrame(animate);
-    cube.rotation.x = fluids.add(cube.rotation.x, config.speed);
-    cube.rotation.y = fluids.add(cube.rotation.y, config.speed);
+    torusKnot.rotation.x = fluids.add(torusKnot.rotation.x, config.speed);
+    torusKnot.rotation.y = fluids.add(torusKnot.rotation.y, config.speed);
     renderer.render(scene, camera);
 }
 
