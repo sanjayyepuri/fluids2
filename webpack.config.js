@@ -10,4 +10,5 @@ module.exports = {
     plugins:[
         new HtmlWebpackPlugin({title: "Fluids2", template: "src/index.html"})
     ],
+    mode: "development",
 };
