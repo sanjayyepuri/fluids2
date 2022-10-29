@@ -6,44 +6,63 @@ const gui = new GUI();
 
 const config = {
     speed: 0.01,
-    radius: 1,
-    tube: 0.4,
-    tubularSegments: 64,
-    radialSegments:  8,
 };
 
 gui.add(config, "speed", 0, 0.10, 0.001);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-    75, window.innerWidth / window.innerHeight, 0.1, 1000
+    75, window.innerWidth / window.innerHeight, 0.1, 3500 
 );
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const light = new THREE.DirectionalLight(0xffffff);
-light.position.set(0, 0, 1);
+const geometry = new THREE.BufferGeometry();
 
-const geometry = new THREE.TorusKnotGeometry(
-    config.radius,
-    config.tube,
-    config.tubularSegments,
-    config.radialSegments
-);
+const positions = [];
+const colors = [];
 
-const material = new THREE.MeshToonMaterial(
-    {color: 0x90C2E7}
-);
-const torusKnot = new THREE.Mesh(geometry, material);
-scene.add(torusKnot);
-scene.add(light);
-camera.position.z = 5;
+const particles = 50000;
+
+const color = new THREE.Color();
+const n = 1000, n2 = n / 2; // particles spread in the cube
+
+for ( let i = 0; i < particles; i ++ ) {
+
+    // positions
+
+    const x = Math.random() * n - n2;
+    const y = Math.random() * n - n2;
+    const z = Math.random() * n - n2;
+
+    positions.push( x, y, z );
+
+    const vx = ( x / n ) + 0.5;
+    const vy = ( y / n ) + 0.5;
+    const vz = ( z / n ) + 0.5;
+
+    color.setRGB( vx, vy, vz );
+
+    colors.push( color.r, color.g, color.b );
+}
+
+
+geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+const material = new THREE.PointsMaterial( { size: 15, vertexColors: true } );
+
+const points = new THREE.Points(geometry, material);
+
+scene.add(points);
+
+camera.position.z = 2000;
 
 function animate() {
     requestAnimationFrame(animate);
-    torusKnot.rotation.x = fluids.add(torusKnot.rotation.x, config.speed);
-    torusKnot.rotation.y = fluids.add(torusKnot.rotation.y, config.speed);
+    points.rotation.x = fluids.add(points.rotation.x, config.speed);
+    points.rotation.y = fluids.add(points.rotation.y, config.speed);
     renderer.render(scene, camera);
 }
 
