@@ -23,10 +23,10 @@ const geometry = new THREE.BufferGeometry();
 const positions = [];
 const colors = [];
 
-const particles = 50000;
+const particles = 5000;
 
 const color = new THREE.Color();
-const n = 1000, n2 = n / 2; // particles spread in the cube
+const n = 500, n2 = n / 2; // particles spread in the cube
 
 for ( let i = 0; i < particles; i ++ ) {
 
