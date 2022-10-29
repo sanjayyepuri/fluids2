@@ -26,6 +26,7 @@ jobs:
       - name: Build Site
         run: |
           cd www
+          npm install
           npm run build
 
       - name: Deploy
