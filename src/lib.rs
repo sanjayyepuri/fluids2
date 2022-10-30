@@ -1,14 +1,8 @@
-use wasm_bindgen::prelude::*;
+mod utils;
+mod fluid_simulation;
+mod particle_buffer;
 
-#[wasm_bindgen]
-extern {
-    pub fn alert(s: &str);
-}
 
-#[wasm_bindgen]
-pub fn add(x: f32, y: f32) -> f32 {
-    x + y
-}
-
-// the first step to create a pic simulation is to get a datastructure to represent the particles
-// we then need to ensure this datastructure is friendly to be read directly from memory in javascript
+#[cfg(feature="wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
