@@ -14,16 +14,18 @@ const gui = new GUI();
 const stats = Stats()
 document.body.appendChild(stats.dom);
 
-const config = { speed: 0.01, };
+const config = { speed: 0.01, gravity: 10.0 };
 gui.add(config, "speed", 0, 0.10, 0.001);
+gui.add(config, "gravity", 0, 100);
 
 const numParticles = 5000;
 const n = 500;
 
 const fluidSimulation = FluidSimulation.new(numParticles);
 fluidSimulation.init_cube(n);
+fluidSimulation.init_random_velocity(5);
 
-const positions = new Float32Array(memory.buffer, fluidSimulation.particle_buffer(), numParticles * 3);
+const positions = new Float32Array(memory.buffer, fluidSimulation.position_buffer(), numParticles * 3);
 const colors = [];
 for ( let i = 0; i < positions.length; i ++ ) {
     colors.push((positions[i] / n) + 0.5);
@@ -38,7 +40,7 @@ const points = new THREE.Points(geometry, material);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-    75, window.innerWidth / window.innerHeight, 0.1, 3500 
+    75, window.innerWidth / window.innerHeight, 0.1, 3500
 );
 scene.add(points);
 camera.position.z = 2000;
@@ -47,7 +49,15 @@ function animate() {
     requestAnimationFrame(animate);
     points.rotation.x += config.speed;
     points.rotation.y += config.speed;
+
+    fluidSimulation.set_gravity(config.gravity);
+
+    fluidSimulation.update()
+    points.geometry.attributes.position.needsUpdate = true;
+    points.geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+
     renderer.render(scene, camera);
+
     stats.update();
 }
 
