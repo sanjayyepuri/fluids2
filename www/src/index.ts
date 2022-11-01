@@ -46,7 +46,7 @@ scene.add(points);
 camera.position.z = 2000;
 
 
-const position = new THREE.Object3D();
+const dummy = new THREE.Object3D();
 
 function animate() {
     requestAnimationFrame(animate);
@@ -55,12 +55,12 @@ function animate() {
     fluidSimulation.update()
 
     for (let i = 0; i < numParticles; ++i) {
-        position.position.x = positions[i*3];
-        position.position.y = positions[i*3 + 1];
-        position.position.z = positions[i*3 + 2];
-        position.updateMatrix()
+        dummy.position.x = positions[i * 3];
+        dummy.position.y = positions[i*3 + 1];
+        dummy.position.z = positions[i*3 + 2];
+        dummy.updateMatrix()
 
-        points.setMatrixAt(i, position.matrix);
+        points.setMatrixAt(i, dummy.matrix);
     }
 
     points.instanceMatrix.needsUpdate = true;
