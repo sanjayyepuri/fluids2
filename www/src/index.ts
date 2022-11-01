@@ -18,7 +18,7 @@ document.body.appendChild(stats.dom);
 const config = { gravity: 10.0 };
 gui.add(config, "gravity", 0, 100);
 
-const numParticles = 50;
+const numParticles = 100;
 const n = 500;
 
 const fluidSimulation = FluidSimulation.new(numParticles);
@@ -27,8 +27,8 @@ fluidSimulation.init_random_velocity(5);
 
 const positions = new Float32Array(memory.buffer, fluidSimulation.position_buffer(), numParticles * 3);
 
-const geometry = new THREE.SphereGeometry( 10, 32, 16 );
-const material = new THREE.MeshBasicMaterial( { color: 0x049ef4 } );
+const geometry = new THREE.SphereGeometry( 10, 16, 8 );
+const material = new THREE.MeshStandardMaterial( { color: 0x049ef4 } );
 
 const points = new THREE.InstancedMesh(geometry, material, numParticles);
 
@@ -37,6 +37,11 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     75, window.innerWidth / window.innerHeight, 0.1, 3500
 );
+
+const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+const ambientLight = new THREE.AmbientLight();
+scene.add( directionalLight );
+scene.add(ambientLight);
 
 const controls = new OrbitControls( camera, renderer.domElement );
 
