@@ -38,7 +38,7 @@ const camera = new THREE.PerspectiveCamera(
     75, window.innerWidth / window.innerHeight, 0.1, 3500
 );
 
-const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5);
 const ambientLight = new THREE.AmbientLight();
 scene.add( directionalLight );
 scene.add(ambientLight);
