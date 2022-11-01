@@ -18,9 +18,9 @@ impl FluidSimulation {
         }
     }
 
-    pub fn update(&mut self) {
-        self.particle_buffer_.apply_gravity(self.gravity_);
-        self.particle_buffer_.advect_particles();
+    pub fn update(&mut self, t: f32) {
+        self.particle_buffer_.apply_gravity(self.gravity_, t);
+        self.particle_buffer_.advect_particles(t);
     }
 
     pub fn position_buffer(&self) -> *const f32 {

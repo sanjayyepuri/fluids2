@@ -15,20 +15,19 @@ const gui = new GUI();
 const stats = Stats()
 document.body.appendChild(stats.dom);
 
-const config = { gravity: 10.0 };
-gui.add(config, "gravity", 0, 100);
+const config = { gravity: 1000.0 };
+gui.add(config, "gravity", 0, 5000);
 
 const numParticles = 100;
-const n = 500;
+const n = 50;
 
 const fluidSimulation = FluidSimulation.new(numParticles);
 fluidSimulation.init_cube(n);
-fluidSimulation.init_random_velocity(5);
-
+fluidSimulation.init_random_velocity(50);
 const positions = new Float32Array(memory.buffer, fluidSimulation.position_buffer(), numParticles * 3);
 
-const geometry = new THREE.SphereGeometry( 10, 16, 8 );
-const material = new THREE.MeshStandardMaterial( { color: 0x049ef4 } );
+const geometry = new THREE.SphereGeometry(1, 16, 8);
+const material = new THREE.MeshStandardMaterial({ color: 0x049ef4 });
 
 const points = new THREE.InstancedMesh(geometry, material, numParticles);
 
@@ -37,27 +36,25 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     75, window.innerWidth / window.innerHeight, 0.1, 3500
 );
+camera.position.z = 100;
 
-const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
 const ambientLight = new THREE.AmbientLight();
-scene.add( directionalLight );
+
+scene.add(directionalLight);
 scene.add(ambientLight);
+scene.add(points);
 
 const controls = new OrbitControls( camera, renderer.domElement );
 
-
-scene.add(points);
-
-camera.position.z = 2000;
-
+const clock = new THREE.Clock();
 
 const dummy = new THREE.Object3D();
-
 function animate() {
     requestAnimationFrame(animate);
 
     fluidSimulation.set_gravity(config.gravity);
-    fluidSimulation.update()
+    fluidSimulation.update(clock.getDelta())
 
     for (let i = 0; i < numParticles; ++i) {
         dummy.position.x = positions[i * 3];

@@ -39,17 +39,18 @@ impl ParticleBuffer {
         self.num_particles_
     }
 
-    pub fn advect_particles(&mut self) {
+    pub fn advect_particles(&mut self, t: f32) {
         for i in 0..self.size() * 3 {
-            self.position_buffer_[i] += self.velocity_buffer_[i];
+            self.position_buffer_[i] += t * self.velocity_buffer_[i];
         }
     }
 
-    pub fn apply_gravity(&mut self, gravity: f32) {
+    pub fn apply_gravity(&mut self, gravity: f32, t: f32) {
         for i in 0..self.size() {
             let p = &self.position_buffer_[i*3..i*3+3];
             let v = &mut self.velocity_buffer_[i*3..i*3+3];
-            let factor = gravity / (p[0] * p[0] + p[1] * p[1] + p[2] * p[2] + 1e-10);
+            let rs = p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
+            let factor = t * gravity / (rs + 1e-10);
             v[0] += -p[0] * factor;
             v[1] += -p[1] * factor;
             v[2] += -p[2] * factor;
