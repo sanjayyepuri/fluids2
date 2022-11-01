@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Stats from "three/examples/jsm/libs/stats.module"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import GUI from "lil-gui";
 
 import { FluidSimulation } from "fluids2";
@@ -14,11 +15,10 @@ const gui = new GUI();
 const stats = Stats()
 document.body.appendChild(stats.dom);
 
-const config = { speed: 0.01, gravity: 10.0 };
-gui.add(config, "speed", 0, 0.10, 0.001);
+const config = { gravity: 10.0 };
 gui.add(config, "gravity", 0, 100);
 
-const numParticles = 5000;
+const numParticles = 50;
 const n = 500;
 
 const fluidSimulation = FluidSimulation.new(numParticles);
@@ -26,39 +26,57 @@ fluidSimulation.init_cube(n);
 fluidSimulation.init_random_velocity(5);
 
 const positions = new Float32Array(memory.buffer, fluidSimulation.position_buffer(), numParticles * 3);
-const colors = [];
-for ( let i = 0; i < positions.length; i ++ ) {
-    colors.push((positions[i] / n) + 0.5);
-}
 
-const geometry = new THREE.BufferGeometry();
-geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+const geometry = new THREE.SphereGeometry( 10, 32, 16 );
+const material = new THREE.MeshBasicMaterial( { color: 0x049ef4 } );
 
-const material = new THREE.PointsMaterial( { size: 15, vertexColors: true } );
-const points = new THREE.Points(geometry, material);
+const points = new THREE.InstancedMesh(geometry, material, numParticles);
+
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     75, window.innerWidth / window.innerHeight, 0.1, 3500
 );
+
+const controls = new OrbitControls( camera, renderer.domElement );
+
+
 scene.add(points);
+
 camera.position.z = 2000;
+
+
+const position = new THREE.Object3D();
 
 function animate() {
     requestAnimationFrame(animate);
-    points.rotation.x += config.speed;
-    points.rotation.y += config.speed;
 
     fluidSimulation.set_gravity(config.gravity);
-
     fluidSimulation.update()
-    points.geometry.attributes.position.needsUpdate = true;
-    points.geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
 
+    for (let i = 0; i < numParticles; ++i) {
+        position.position.x = positions[i*3];
+        position.position.y = positions[i*3 + 1];
+        position.position.z = positions[i*3 + 2];
+        position.updateMatrix()
+
+        points.setMatrixAt(i, position.matrix);
+    }
+
+    points.instanceMatrix.needsUpdate = true;
+
+    controls.update()
     renderer.render(scene, camera);
 
     stats.update();
 }
 
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+window.addEventListener( 'resize', onWindowResize );
 animate();
