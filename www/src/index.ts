@@ -15,21 +15,32 @@ const gui = new GUI();
 const stats = Stats()
 document.body.appendChild(stats.dom);
 
-const config = { gravity: 1000.0 };
-gui.add(config, "gravity", 0, 5000);
+const config = { gravity: 30.0, numParticles: 100, boundary_elasticity: 0.5, particle_elasticity: 0.95, particle_radius: 1.0 };
+gui.add(config, "gravity", 0, 200);
+gui.add(config, "numParticles", 0, 5000);
+gui.add(config, "boundary_elasticity", 0, 1);
+gui.add(config, "particle_elasticity", 0, 1);
+gui.add(config, "particle_radius", 1, 10);
 
-const numParticles = 100;
 const n = 50;
 
-const fluidSimulation = FluidSimulation.new(numParticles);
+const fluidSimulation = FluidSimulation.new(config.numParticles);
 fluidSimulation.init_cube(n);
-fluidSimulation.init_random_velocity(50);
-const positions = new Float32Array(memory.buffer, fluidSimulation.position_buffer(), numParticles * 3);
+fluidSimulation.init_uniform_velocity(0);
 
-const geometry = new THREE.SphereGeometry(1, 16, 8);
-const material = new THREE.MeshStandardMaterial({ color: 0x049ef4 });
+const positions = new Float32Array(memory.buffer, fluidSimulation.position_buffer(), config.numParticles * 3);
+const velocities = new Float32Array(memory.buffer, fluidSimulation.velocity_buffer(), config.numParticles * 3);
+const velocityNormalized = new Float32Array(memory.buffer, fluidSimulation.velocity_normalized_buffer(), config.numParticles);
 
-const points = new THREE.InstancedMesh(geometry, material, numParticles);
+
+const color1 = new THREE.Color("#ff0000");
+const color2 = new THREE.Color("#049ef4");
+
+const geometry = new THREE.SphereGeometry(config.particle_radius, 16, 8);
+const material = new THREE.MeshStandardMaterial();
+
+const points = new THREE.InstancedMesh(geometry, material, config.numParticles);
+points.setColorAt(0, new THREE.Color());
 
 
 const scene = new THREE.Scene();
@@ -49,23 +60,33 @@ const controls = new OrbitControls( camera, renderer.domElement );
 
 const clock = new THREE.Clock();
 
+
+
 const dummy = new THREE.Object3D();
 function animate() {
     requestAnimationFrame(animate);
 
     fluidSimulation.set_gravity(config.gravity);
-    fluidSimulation.update(clock.getDelta())
+    fluidSimulation.set_boundary_elasticity(config.boundary_elasticity);
+    fluidSimulation.set_particle_elasiticity(config.particle_elasticity);
+    fluidSimulation.set_particle_radius(config.particle_radius);
+    fluidSimulation.update(clock.getDelta());
 
-    for (let i = 0; i < numParticles; ++i) {
+
+    for (let i = 0; i < config.numParticles; ++i) {
         dummy.position.x = positions[i * 3];
         dummy.position.y = positions[i*3 + 1];
         dummy.position.z = positions[i*3 + 2];
         dummy.updateMatrix()
 
         points.setMatrixAt(i, dummy.matrix);
+        let c = new THREE.Color(color2);
+        // points.setColorAt(i, color1.setHex( 0xffffff * Math.random() ));
+        points.setColorAt(i, c.lerp(color1, velocityNormalized[i]));
+        points.scale.setScalar(config.particle_radius);
+        points.instanceMatrix.needsUpdate = true;
+        points.instanceColor.needsUpdate = true;
     }
-
-    points.instanceMatrix.needsUpdate = true;
 
     controls.update()
     renderer.render(scene, camera);
