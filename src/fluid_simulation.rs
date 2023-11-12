@@ -139,10 +139,6 @@ impl FluidSimulation {
                 let v1 = self.particle_buffer_.velocity(p1);
                 let v2 = self.particle_buffer_.velocity(p2);
 
-                let vv_x = v1[0] + v2[0];
-                let vv_y = v1[1] + v2[1];
-                let vv_z = v1[2] + v2[2];
-
                 let mag1 = ((v2[0] * dx).powf(2.0) + (v2[1] * dy).powf(2.0) + (v2[2] * dz).powf(2.0)).sqrt();
                 let mag2 = ((v1[0] * dx).powf(2.0) + (v1[1] * dy).powf(2.0) + (v1[2] * dz).powf(2.0)).sqrt();
 
