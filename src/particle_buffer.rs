@@ -20,7 +20,7 @@ pub struct ParticleBuffer {
     position_buffer_: Vec<f32>,
     velocity_buffer_: Vec<f32>,
     velocity_normalized_buffer_: Vec<f32>,
-    force_buffer_: Vec<f32>,
+    // force_buffer_: Vec<f32>, // TODO (sanjay) add force
     num_particles_: usize,
 }
 
@@ -31,7 +31,7 @@ impl ParticleBuffer {
             position_buffer_: vec![0.0; num_particles * 3],
             velocity_buffer_: vec![0.0; num_particles * 3],
             velocity_normalized_buffer_: vec![0.0; num_particles],
-            force_buffer_: vec![0.0; num_particles * 3],
+            // force_buffer_: vec![0.0; num_particles * 3],
             num_particles_: num_particles,
         }
     }
@@ -69,21 +69,21 @@ impl ParticleBuffer {
     }
 
     pub fn compute_normalized_velocity(&mut self) {
-        let mut maxNorm = f32::MIN;
-        let mut minNorm = f32::MAX;
+        let mut max_norm = f32::MIN;
+        let mut min_norm = f32::MAX;
         for i in 0..self.size() {
             let v = &self.velocity_buffer_[i*3..i*3+3];
             self.velocity_normalized_buffer_[i] = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-            if self.velocity_normalized_buffer_[i] > maxNorm {
-                maxNorm = self.velocity_normalized_buffer_[i];
+            if self.velocity_normalized_buffer_[i] > max_norm {
+                max_norm = self.velocity_normalized_buffer_[i];
             }
 
-            if self.velocity_normalized_buffer_[i] < minNorm {
-                minNorm = self.velocity_normalized_buffer_[i];
+            if self.velocity_normalized_buffer_[i] < min_norm {
+                min_norm = self.velocity_normalized_buffer_[i];
             }
         }
         for i in 0..self.velocity_normalized_buffer_.len() {
-            self.velocity_normalized_buffer_[i] = (self.velocity_normalized_buffer_[i] - minNorm) / (maxNorm - minNorm); 
+            self.velocity_normalized_buffer_[i] = (self.velocity_normalized_buffer_[i] - min_norm) / (max_norm - min_norm); 
         }
     }
 
