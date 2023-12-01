@@ -10,7 +10,6 @@ export class SimulationConfig {
     boundaryElasticity: number;
     particleElasticity: number;
     particleRadius: number;
-    boundingBoxSize: number;
     initialVelocity: number;
 }
 
@@ -50,7 +49,7 @@ export class SimulationCradle {
             new Float32Array(memory.buffer, this.simulation_.velocity_buffer(), this.config_.numParticles * 3),
             new Float32Array(memory.buffer, this.simulation_.velocity_normalized_buffer(), this.config_.numParticles)
         );
-        this.simulation_.init_cube(this.config_.boundingBoxSize);
+        this.simulation_.init_cube();
         this.simulation_.init_uniform_velocity(this.config_.initialVelocity);
         this.onInitialize_(this.config_);
     }

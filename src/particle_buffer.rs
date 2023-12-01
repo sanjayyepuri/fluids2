@@ -1,4 +1,4 @@
-pub const BOUNDING_WIDTH :f32 = 50.0;
+pub const BOUNDING_WIDTH: f32 = 50.0;
 
 pub struct BoundingBox {
     pub x0: f32,
@@ -21,6 +21,8 @@ pub struct ParticleBuffer {
     velocity_buffer_: Vec<f32>,
     velocity_normalized_buffer_: Vec<f32>,
     // force_buffer_: Vec<f32>, // TODO (sanjay) add force
+    net_kinetic_energy: f32,
+    net_potential_energy: f32,
     num_particles_: usize,
 }
 
@@ -32,6 +34,8 @@ impl ParticleBuffer {
             velocity_buffer_: vec![0.0; num_particles * 3],
             velocity_normalized_buffer_: vec![0.0; num_particles],
             // force_buffer_: vec![0.0; num_particles * 3],
+            net_kinetic_energy: 0.0,
+            net_potential_energy: 0.0,
             num_particles_: num_particles,
         }
     }
@@ -68,22 +72,31 @@ impl ParticleBuffer {
         return self.velocity_normalized_buffer_.as_ptr();
     }
 
-    pub fn compute_normalized_velocity(&mut self) {
-        let mut max_norm = f32::MIN;
-        let mut min_norm = f32::MAX;
+    pub fn net_particle_energy(&self) -> f32 {
+        return self.net_particle_kinetic_energy() + self.net_particle_potential_energy();
+    }
+
+    pub fn net_particle_kinetic_energy(&self) -> f32 {
+        return self.net_kinetic_energy;
+    }
+
+    pub fn net_particle_potential_energy(&self) -> f32 {
+        return self.net_potential_energy;
+    }
+
+    pub fn compute_system_attributes(&mut self, gravity: f32) {
+        // TODO (sanjay) Likely want to split computing these metrics into separate functions.
+        self.net_kinetic_energy = 0.0;
+        self.net_potential_energy = 0.0;
+        
         for i in 0..self.size() {
             let v = &self.velocity_buffer_[i*3..i*3+3];
-            self.velocity_normalized_buffer_[i] = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-            if self.velocity_normalized_buffer_[i] > max_norm {
-                max_norm = self.velocity_normalized_buffer_[i];
-            }
-
-            if self.velocity_normalized_buffer_[i] < min_norm {
-                min_norm = self.velocity_normalized_buffer_[i];
-            }
-        }
-        for i in 0..self.velocity_normalized_buffer_.len() {
-            self.velocity_normalized_buffer_[i] = (self.velocity_normalized_buffer_[i] - min_norm) / (max_norm - min_norm); 
+            let p = &self.position_buffer_[i*3..i*3+3];
+            let v2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+            self.net_kinetic_energy += 0.5 * 1.0 * v2;
+            self.net_potential_energy += 1.0 * gravity * p[1];
+            self.velocity_normalized_buffer_[i] = v2.sqrt();
+            self.velocity_normalized_buffer_[i] = self.velocity_normalized_buffer_[i] / (self.velocity_normalized_buffer_[i] + 5.0);
         }
     }
 

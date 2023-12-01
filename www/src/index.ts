@@ -11,7 +11,6 @@ config.numParticles = 100;
 config.boundaryElasticity = 0.5;
 config.particleElasticity = 0.95;
 config.particleRadius = 1.0;
-config.boundingBoxSize = 50;
 config.initialVelocity = 0.0;
 
 // Setup Scene
@@ -38,6 +37,9 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const gui = new GUI();
 const stats = Stats();
 
+var particleEnergyPanel = stats.addPanel(Stats.Panel('energy', '#ff8', '#221'));
+
+stats.showPanel(3);
 
 document.body.appendChild(renderer.domElement);
 document.body.appendChild(stats.dom);
@@ -63,12 +65,13 @@ const dummy = new THREE.Object3D();
 function animate() {
     requestAnimationFrame(animate);
 
-    simulationCradle.step(clock.getDelta());
+    simulationCradle.step(Math.min(clock.getDelta(), 1));
+    particleEnergyPanel.update(simulationCradle.simulation_.net_particle_energy(), 100000);
 
     for (let i = 0; i < simulationCradle.config.numParticles; ++i) {
-        dummy.position.x = simulationCradle.buffers.position[i * 3];
-        dummy.position.y = simulationCradle.buffers.position[i * 3 + 1];
-        dummy.position.z = simulationCradle.buffers.position[i * 3 + 2];
+        dummy.position.x = simulationCradle.buffers.position[i * 3] - 25;
+        dummy.position.y = simulationCradle.buffers.position[i * 3 + 1] - 25;
+        dummy.position.z = simulationCradle.buffers.position[i * 3 + 2] - 25;
         dummy.updateMatrix()
 
         points.setMatrixAt(i, dummy.matrix);
