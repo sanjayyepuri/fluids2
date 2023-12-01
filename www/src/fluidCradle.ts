@@ -74,7 +74,8 @@ export class SimulationCradle {
         gui.add(this.config_, "particleRadius", 1, 10);
 
         const simulationConfig = gui.addFolder("");
-        simulationConfig.add(this.config_, "numParticles", 0, 500).onFinishChange(() => { this.initialize() });
+        simulationConfig.add(this.config_, "numParticles", 0, 1000).onFinishChange(() => { this.initialize() });
+        simulationConfig.add(this.config_, "initialVelocity", 0, 500).onFinishChange(() => { this.initialize() });
         simulationConfig.add(this, "restart");
     }
 
