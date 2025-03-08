@@ -11,11 +11,12 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook", "wee_alloc"]
 
 [dependencies]
-wasm-bindgen = "0.2"
-console_error_panic_hook = { version = "0.1.1", optional = true }
-wee_alloc = { version = "0.4.5", optional = true } 
+wasm-bindgen = "0.2.84"
+wee_alloc = { version = "0.4.5", optional = true }
 getrandom = { version = "0.2", features = ["js"] }
 rand = "0.8"
+
+console_error_panic_hook = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
