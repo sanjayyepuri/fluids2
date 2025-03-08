@@ -105,7 +105,7 @@ impl ParticleBuffer {
     }
 
     /// @brief Returns a PointView for the particle at the given index.
-    fn get_point(&self, index: usize) -> PointView {
+    fn get_position(&self, index: usize) -> PointView {
         PointView {
             x: &self.x[index],
             y: &self.y[index],
@@ -343,14 +343,27 @@ impl BarnesHut {
     }
 
     fn step(&mut self, time_step: f32) {
+        // TODO (sanjay) : there are too many dynamic allocations occuring in each time step; Create
+        //  * Create a DFS iterator that reuses a stack and takes a hint to the max iteration depth.
+        //  * Similarly, create a reusable buffer to contain the leaf nodes at each step.
+        //  * There are two DFS passes occuring here; one to find the leaf nodes and another to compute
+        //    the forces. Try to combine these into a single pass.
+
+
         let quad_tree = QuadTree::new(&self.particles, self.max_depth, self.max_particles_per_node);
 
         // find all the leaf nodes
         let leaf_nodes = self.find_leaf_nodes(&quad_tree.root, self.particles.x.len());
         let mut net_forces = vec![Point { x: 0.0, y: 0.0 }; leaf_nodes.len()];
 
-        // for each leaf node
+        // for each leaf node compute the force
         for (i, node) in leaf_nodes.iter().enumerate() {
+            // TODO (sanjay) : make efficient
+            // At the moment, this is still an O(n^2) algorithm; in order to reduce the complexity
+            // we need to compute the reciprocal forces on each body or internal node and then
+            // apply the net forces to bodies within the internal node. This way we do not need
+            // to revisit leaf nodes.
+
             self.compute_forces(&mut net_forces[i], &node, &quad_tree.root);
 
             for p in node.particle_indices.iter() {
@@ -462,7 +475,7 @@ mod tests {
     fn test_get_point() {
         let mut buffer = ParticleBuffer::new(10);
         buffer.add_particle(1.0, 2.0, 3.0);
-        let point = buffer.get_point(0);
+        let point = buffer.get_position(0);
         assert_eq!(*point.x, 1.0);
         assert_eq!(*point.y, 2.0);
     }
@@ -634,5 +647,20 @@ mod tests {
             .particle_indices
             .iter()
             .all(|item| expected_indices.contains(item)));
+    }
+
+    #[test]
+    fn barnes_hut_basic_test() {
+        let mut buffer = ParticleBuffer::new(10);
+        buffer.add_particle(0.75, 0.75, 1.0);
+        buffer.add_particle(-0.75, 0.75, 1.0);
+        buffer.add_particle(0.75, -0.75, 1.0);
+        buffer.add_particle(-0.75, -0.75, 1.0);
+
+        let mut barnes_hut = BarnesHut::new(buffer, 1.0, 1, 1);
+        barnes_hut.step(1.0);
+
+        assert!(true);
+        // TODO (sanjay) : write tests
     }
 }
