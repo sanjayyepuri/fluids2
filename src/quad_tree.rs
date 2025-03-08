@@ -348,6 +348,7 @@ impl BarnesHut {
         //  * Similarly, create a reusable buffer to contain the leaf nodes at each step.
         //  * There are two DFS passes occuring here; one to find the leaf nodes and another to compute
         //    the forces. Try to combine these into a single pass.
+        //  * QuadTree should be able to reuse memory between iterations.
 
 
         let quad_tree = QuadTree::new(&self.particles, self.max_depth, self.max_particles_per_node);
