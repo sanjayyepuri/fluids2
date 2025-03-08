@@ -1,4 +1,4 @@
-use std::{net, vec};
+use std::vec;
 
 /// @brief Point is a struct that holds the x and y coordinates of a point.
 #[derive(Clone)]
