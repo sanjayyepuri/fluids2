@@ -399,9 +399,12 @@ impl BarnesHut {
         let mut stack = vec![root];
 
         while let Some(current_node) = stack.pop() {
-            // TODO (sanjay) : check if currentNode is the same as node
-
             let distance = node.center_of_mass.distance(&current_node.center_of_mass);
+
+            if distance < 1e-8 {
+                continue;
+            }
+
             let width = current_node.bounding_box.width();
             let quotient = width / distance;
             if current_node.particle_indices.len() > 0 || quotient < self.theta {
