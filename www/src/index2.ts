@@ -1,25 +1,28 @@
 import * as THREE from "three";
-import Stats from "three/examples/jsm/libs/stats.module";
+import Stats from "three/examples/jsm/libs/stats.module"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import GUI from "lil-gui";
 
-
-import { SimulationConfig, BarnesHutCradle } from "./barnesHut";
+import { SimulationConfig, SimulationCradle } from "./fluidCradle";
 
 const config = new SimulationConfig();
-config.numParticles = 10;
-config.theta = 0.5;
-config.maxDepth = 4;
-config.maxParticlesPerNode = 4;
-config.gravitionalConstant = 0.1;
+config.gravity = 30.0;
+config.numParticles = 100;
+config.boundaryElasticity = 0.5;
+config.particleElasticity = 0.95;
+config.particleRadius = 1.0;
+config.initialVelocity = 0.0;
 
 // Setup Scene
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+
 const color1 = new THREE.Color("#ff0000");
 const color2 = new THREE.Color("#049ef4");
-const geometry = new THREE.SphereGeometry(1, 16, 8);
+
+const geometry = new THREE.SphereGeometry(config.particleRadius, 16, 8);
 const material = new THREE.MeshStandardMaterial();
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     75, window.innerWidth / window.innerHeight, 0.1, 3500
@@ -29,50 +32,57 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
 const ambientLight = new THREE.AmbientLight();
 scene.add(directionalLight);
 scene.add(ambientLight);
-
 const controls = new OrbitControls(camera, renderer.domElement);
+
 const gui = new GUI();
 const stats = Stats();
 
+var particleEnergyPanel = stats.addPanel(Stats.Panel('energy', '#ff8', '#221'));
 
 stats.showPanel(3);
 
 document.body.appendChild(renderer.domElement);
 document.body.appendChild(stats.dom);
 
-const barnesHut = new BarnesHutCradle(config);
-barnesHut.initialize();
+// Setup Simulation
+const simulationCradle = new SimulationCradle(config);
+simulationCradle.bind(gui);
 
 let points: THREE.InstancedMesh = null;
-points = new THREE.InstancedMesh(geometry, material, config.numParticles);
-points.setColorAt(0, new THREE.Color());
-scene.add(points);
+simulationCradle.addInitializeListener(config => {
+    if (points != null) {
+        scene.remove(points);
+    }
+    points = new THREE.InstancedMesh(geometry, material, config.numParticles);
+    points.setColorAt(0, new THREE.Color());
+    scene.add(points);
+});
+
+simulationCradle.initialize();
 
 const clock = new THREE.Clock();
 const dummy = new THREE.Object3D();
-
 function animate() {
     requestAnimationFrame(animate);
 
-    barnesHut.step(clock.getDelta());
+    simulationCradle.step(Math.min(clock.getDelta(), 1));
+    particleEnergyPanel.update(simulationCradle.simulation_.net_particle_energy(), 100000);
 
-    for (let i = 0; i < config.numParticles; i++) {
-        const [x, y] = barnesHut.buffers_.getPosition(i);
-        dummy.position.x = x - 25;
-        dummy.position.y = y - 25;
-        dummy.position.z = 0;
-        dummy.updateMatrix();
+    for (let i = 0; i < simulationCradle.config.numParticles; ++i) {
+        dummy.position.x = simulationCradle.buffers.position[i * 3] - 25;
+        dummy.position.y = simulationCradle.buffers.position[i * 3 + 1] - 25;
+        dummy.position.z = simulationCradle.buffers.position[i * 3 + 2] - 25;
+        dummy.updateMatrix()
 
         points.setMatrixAt(i, dummy.matrix);
-        points.setColorAt(i, new THREE.Color(color1.r, color1.g, color1.b));
-        console.log(`Particle ${i}: (${x}, ${y})`);
-
-        points.scale.setScalar(1);
+        let c = new THREE.Color(color2);
+        points.setColorAt(i, c.lerp(color1, simulationCradle.buffers.normalizedVelocity[i]));
+        points.scale.setScalar(simulationCradle.config.particleRadius);
         points.instanceMatrix.needsUpdate = true;
         points.instanceColor.needsUpdate = true;
     }
 
-    controls.update();
+    controls.update()
     renderer.render(scene, camera);
 
     stats.update();
