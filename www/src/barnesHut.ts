@@ -7,7 +7,7 @@ export class SimulationConfig {
   theta: number;
   maxDepth: number;
   maxParticlesPerNode: number;
-  gravitionalConstant: number;
+  gravitationalConstant: number;
 }
 
 class SimulationBuffer {
@@ -63,7 +63,7 @@ export class BarnesHutCradle implements ParticleSimulation {
   }
 
   particleColor(index: number): number {
-    return 0xff0000`;
+    return 0xff0000;
   }
 
   numParticles(): number {
