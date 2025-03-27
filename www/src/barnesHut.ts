@@ -1,61 +1,76 @@
 import { BarnesHut } from "fluids2";
 import { memory } from "fluids2/fluids2_bg.wasm";
-
+import { Particle, ParticleSimulation } from "./particleVisualization";
 
 export class SimulationConfig {
-    numParticles: number;
-    theta: number;
-    maxDepth: number;
-    maxParticlesPerNode: number;
-    gravitionalConstant: number;
+  numParticles: number;
+  theta: number;
+  maxDepth: number;
+  maxParticlesPerNode: number;
+  gravitionalConstant: number;
 }
 
 class SimulationBuffer {
-    positionX: Float32Array;
-    positionY: Float32Array;
+  positionX: Float32Array;
+  positionY: Float32Array;
 
-    constructor(positionX: Float32Array, positionY: Float32Array) {
-        this.positionX = positionX;
-        this.positionY = positionY;
-    }
-
-    getPosition(index: number): [number, number] {
-        return [this.positionX[index], this.positionY[index]];
-    }
+  constructor(positionX: Float32Array, positionY: Float32Array) {
+    this.positionX = positionX;
+    this.positionY = positionY;
+  }
 }
 
-export class BarnesHutCradle {
-    constructor(config: SimulationConfig) {
-        this.config_ = config;
-    }
+export class BarnesHutCradle implements ParticleSimulation {
+  constructor(config: SimulationConfig) {
+    this.config_ = config;
+    this.initialize();
+  }
 
-    initialize(): void {
-        this.simulation_ = BarnesHut.new(
-            this.config_.numParticles,
-            this.config_.theta,
-            this.config_.maxDepth,
-            this.config_.maxParticlesPerNode);
+  initialize(): void {
+    this.simulation_ = BarnesHut.new(
+      this.config_.numParticles,
+      this.config_.theta,
+      this.config_.maxDepth,
+      this.config_.maxParticlesPerNode,
+    );
 
-        this.simulation_.init_cube(this.config_.numParticles);
+    this.simulation_.init_cube(this.config_.numParticles);
 
-        this.buffers_ = new SimulationBuffer(
-            new Float32Array(memory.buffer, this.simulation_.get_raw_x_coordinates(), this.config_.numParticles),
-            new Float32Array(memory.buffer, this.simulation_.get_raw_y_coordinates(), this.config_.numParticles)
-        );
+    this.buffers_ = new SimulationBuffer(
+      new Float32Array(
+        memory.buffer,
+        this.simulation_.get_raw_x_coordinates(),
+        this.config_.numParticles,
+      ),
+      new Float32Array(
+        memory.buffer,
+        this.simulation_.get_raw_y_coordinates(),
+        this.config_.numParticles,
+      ),
+    );
+  }
 
-        // log all positions
-        for (let i = 0; i < this.config_.numParticles; i++) {
-            const [x, y] = this.buffers_.getPosition(i);
-            console.log(`Particle ${i}: (${x}, ${y})`);
-        }
-    }
+  step(time: number): void {
+    this.simulation_.step(time);
+  }
 
-    step(time: number): void {
-        this.simulation_.step(time);
-    }
+  getParticle(index: number): Particle {
+    return {
+      x: this.buffers_.positionX[index],
+      y: this.buffers_.positionY[index],
+      z: 0,
+    };
+  }
 
-    config_: SimulationConfig;
-    simulation_: BarnesHut;
-    buffers_: SimulationBuffer;
+  particleColor(index: number): number {
+    return 0xff0000`;
+  }
+
+  numParticles(): number {
+    return this.config_.numParticles;
+  }
+
+  config_: SimulationConfig;
+  simulation_: BarnesHut;
+  buffers_: SimulationBuffer;
 }
-

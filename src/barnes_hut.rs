@@ -421,8 +421,11 @@ impl BarnesHut {
         let mut rng = rand::thread_rng();
 
         for i in 0..num_particles {
-            self.particles
-                .add_particle(rng.gen::<f32>() * 25.0, rng.gen::<f32>() * 25.0, 1.0 * (i+1) as f32);
+            self.particles.add_particle(
+                rng.gen::<f32>() * 25.0,
+                rng.gen::<f32>() * 25.0,
+                1.0 * (i + 1) as f32,
+            );
         }
     }
 
