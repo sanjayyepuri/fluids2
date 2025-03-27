@@ -1,6 +1,6 @@
 mod fluid_simulation;
 mod particle_buffer;
-mod quad_tree;
+mod barnes_hut;
 mod utils;
 
 #[cfg(feature = "wee_alloc")]

@@ -1,4 +1,6 @@
+use rand::Rng;
 use std::vec;
+use wasm_bindgen::prelude::*;
 
 /// @brief Point is a struct that holds the x and y coordinates of a point.
 #[derive(Clone)]
@@ -79,6 +81,7 @@ struct ParticleBuffer {
 
     mass: Vec<f32>,
 }
+
 impl ParticleBuffer {
     fn new(capacity: usize) -> Self {
         ParticleBuffer {
@@ -110,6 +113,12 @@ impl ParticleBuffer {
             x: &self.x[index],
             y: &self.y[index],
         }
+    }
+
+    /// @brief Sets the position of the particle at the given index.
+    fn set_position(&mut self, index: usize, x: f32, y: f32) {
+        self.x[index] = x;
+        self.y[index] = y;
     }
 
     /// @brief Returns a ParticleView for the particle at the given index.
@@ -145,6 +154,18 @@ impl ParticleBuffer {
             top_right: Point { x: max_x, y: max_y },
             bottom_left: Point { x: min_x, y: min_y },
         };
+    }
+
+    fn get_raw_x_coordinates(&self) -> *const f32 {
+        self.x.as_ptr()
+    }
+
+    fn get_raw_y_coordinates(&self) -> *const f32 {
+        self.y.as_ptr()
+    }
+
+    fn size(&self) -> usize {
+        self.x.len()
     }
 }
 struct QuadTreeNode {
@@ -318,6 +339,7 @@ impl QuadTree {
     }
 }
 
+#[wasm_bindgen]
 struct BarnesHut {
     particles: ParticleBuffer,
     theta: f32,
@@ -326,30 +348,30 @@ struct BarnesHut {
     gravitational_constant: f32,
 }
 
+#[wasm_bindgen]
 impl BarnesHut {
-    fn new(
-        particles: ParticleBuffer,
+    pub fn new(
+        num_particles: usize,
         theta: f32,
         max_depth: usize,
         max_particles_per_node: usize,
     ) -> Self {
         BarnesHut {
-            particles,
+            particles: ParticleBuffer::new(num_particles),
             theta,
             max_depth,
             max_particles_per_node,
-            gravitational_constant: 5.0,
+            gravitational_constant: 15.00,
         }
     }
 
-    fn step(&mut self, time_step: f32) {
+    pub fn step(&mut self, time_step: f32) {
         // TODO (sanjay) : there are too many dynamic allocations occuring in each time step; Create
         //  * Create a DFS iterator that reuses a stack and takes a hint to the max iteration depth.
         //  * Similarly, create a reusable buffer to contain the leaf nodes at each step.
         //  * There are two DFS passes occuring here; one to find the leaf nodes and another to compute
         //    the forces. Try to combine these into a single pass.
         //  * QuadTree should be able to reuse memory between iterations.
-
 
         let quad_tree = QuadTree::new(&self.particles, self.max_depth, self.max_particles_per_node);
 
@@ -385,6 +407,25 @@ impl BarnesHut {
 
             self.particles.force_x[i] = 0.0;
             self.particles.force_y[i] = 0.0;
+        }
+    }
+
+    pub fn get_raw_x_coordinates(&self) -> *const f32 {
+        self.particles.get_raw_x_coordinates()
+    }
+    pub fn get_raw_y_coordinates(&self) -> *const f32 {
+        self.particles.get_raw_y_coordinates()
+    }
+
+    pub fn init_cube(&mut self, num_particles: usize) {
+        let mut rng = rand::thread_rng();
+
+        for i in 0..num_particles {
+            self.particles.add_particle(
+                rng.gen::<f32>() * 25.0,
+                rng.gen::<f32>() * 25.0,
+                1.0 * (i + 1) as f32,
+            );
         }
     }
 
@@ -429,10 +470,10 @@ impl BarnesHut {
                     self.gravitational_constant * node.mass * current_node.mass / distance.powi(2);
 
                 // TODO (sanjay): double check this math
-                force.x += force_magnitude
+                force.x -= force_magnitude
                     * (node.center_of_mass.x - current_node.center_of_mass.x)
                     / distance;
-                force.y += force_magnitude
+                force.y -= force_magnitude
                     * (node.center_of_mass.y - current_node.center_of_mass.y)
                     / distance;
                 continue;
