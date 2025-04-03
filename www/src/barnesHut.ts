@@ -1,6 +1,7 @@
 import { BarnesHut } from "fluids2";
 import { memory } from "fluids2/fluids2_bg.wasm";
 import { Particle, ParticleSimulation } from "./particleVisualization";
+import GUI from "lil-gui";
 
 export class SimulationConfig {
   numParticles: number;
@@ -50,8 +51,24 @@ export class BarnesHutCradle implements ParticleSimulation {
     );
   }
 
+  bind(gui: GUI) : void {
+    gui.add(this.config_, "gravitationalConstant", 0.1, 50);
+    gui.add(this.config_, "theta", 0, 1);
+    gui.add(this.config_, "maxParticlesPerNode", 1, 5);
+  }
+
+  updateParameters(): void {
+    this.simulation_.set_gravitational_constant(this.config_.gravitationalConstant);
+    this.simulation_.set_theta(this.config_.theta);
+    this.simulation_.set_max_particles_per_node(this.config_.maxParticlesPerNode);
+  }
+
   step(time: number): void {
     this.simulation_.step(time);
+  }
+
+  reinitialize(): void {
+    // TODO (sanjay) will require reallocating buffers with the correct number of particles.
   }
 
   getParticle(index: number): Particle {

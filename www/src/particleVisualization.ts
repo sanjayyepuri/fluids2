@@ -1,6 +1,7 @@
+import GUI from "lil-gui";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import Stats from "three/examples/jsm/libs/stats.module"
+import Stats from "three/examples/jsm/libs/stats.module";
 
 export type Particle = {
   x: number;
@@ -9,15 +10,22 @@ export type Particle = {
 };
 
 export interface ParticleSimulation {
+  // updates any dynamic values in the simulation prior to the step
+  // TODO (sanjay) should this be part of the step?
+  updateParameters: () => void;
   // steps the simulation forward in time
   step: (dt: number) => void;
-
+  // returns the color to render the particle as
+  particleColor: (index: number) => number;
+  // returns the number of particles
+  numParticles: () => number;
   // returns the particle at the given index
   getParticle: (index: number) => Particle;
+  // binds the configuration object for the simulation and manages updates.
+  bind: (gui: GUI) => void;
 
-  particleColor: (index: number) => number;
-
-  numParticles: () => number;
+  // Resets the simulation to a known state
+  reinitialize: () => void;
 }
 
 export class ParticleVisualization {
@@ -59,6 +67,10 @@ export class ParticleVisualization {
 
     this.stats = Stats();
     this.stats.showPanel(0);
+
+    // Setup configuration GUI
+    this.configPanel = new GUI();
+    this.simulation.bind(this.configPanel);
   }
 
   initializeDom() {
@@ -67,6 +79,7 @@ export class ParticleVisualization {
   }
 
   render() {
+    this.simulation.updateParameters();
     this.simulation.step(this.clock.getDelta());
 
     let translation = new THREE.Matrix4();
@@ -98,6 +111,11 @@ export class ParticleVisualization {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  reset() {
+    // invariant: the simulation should reinitialize with the latest values of the configuration.
+    this.simulation.reinitialize();
+  }
+
   simulation: ParticleSimulation;
 
   renderer: THREE.WebGLRenderer;
@@ -107,4 +125,5 @@ export class ParticleVisualization {
   controls: OrbitControls;
   clock: THREE.Clock;
   stats: Stats;
+  configPanel: GUI;
 }

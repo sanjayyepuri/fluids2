@@ -355,14 +355,27 @@ impl BarnesHut {
         theta: f32,
         max_depth: usize,
         max_particles_per_node: usize,
+        gravitational_constant: f32,
     ) -> Self {
         BarnesHut {
             particles: ParticleBuffer::new(num_particles),
             theta,
             max_depth,
             max_particles_per_node,
-            gravitational_constant: 15.00,
+            gravitational_constant,
         }
+    }
+
+    pub fn set_gravitational_constant(&mut self, value: f32) {
+        self.gravitational_constant = value;
+    }
+
+    pub fn set_theta(&mut self, value: f32) {
+        self.theta = value;
+    }
+
+    pub fn set_max_particles_per_node(&mut self, value: usize) {
+        self.max_particles_per_node = value;
     }
 
     pub fn step(&mut self, time_step: f32) {
