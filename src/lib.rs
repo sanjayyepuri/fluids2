@@ -1,5 +1,4 @@
 mod fluid_simulation;
-mod particle_buffer;
 mod barnes_hut;
 mod utils;
 
