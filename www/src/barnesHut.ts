@@ -63,7 +63,7 @@ export class BarnesHutCradle implements ParticleSimulation {
     const simulationGui = gui.addFolder("Simulation Parameters");
     simulationGui.add(this.config_, "numParticles");
     simulationGui.add(this.config_, "maxDepth");
-    simulationGui.add(this, "reinitialize");
+    simulationGui.add(this, "initializeBuffers");
   }
 
   updateParameters(): void {
@@ -78,6 +78,8 @@ export class BarnesHutCradle implements ParticleSimulation {
 
   step(time: number): void {
     this.simulation_.step(time);
+    // TODO (sanjay) for some reason for large numbers of particles the buffers die.
+    this.initializeBuffers();
   }
 
   reinitialize(): void {

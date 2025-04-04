@@ -2,9 +2,12 @@ use rand::Rng;
 use std::{u64::MAX, vec};
 use wasm_bindgen::prelude::*;
 
+use web_sys::console;
+
 /// @brief Point is a struct that holds the x and y coordinates of a point.
-#[derive(Clone)]
-struct Point {
+#[derive(Clone, Debug)]
+#[wasm_bindgen]
+pub struct Point {
     x: f32,
     y: f32,
 }
@@ -340,7 +343,7 @@ impl QuadTree {
 }
 
 #[wasm_bindgen]
-struct BarnesHut {
+pub struct BarnesHut {
     particles: ParticleBuffer,
     theta: f32,
     max_depth: usize,
@@ -446,15 +449,19 @@ impl BarnesHut {
         self.particles.get_raw_y_coordinates()
     }
 
+    pub fn get_particle(&self, index: usize) -> Point {
+        Point {
+            x: *self.particles.get_particle(index).x,
+            y: *self.particles.get_particle(index).y,
+        }
+    }
+
     pub fn init_cube(&mut self, num_particles: usize) {
         let mut rng = rand::thread_rng();
 
         for i in 0..num_particles {
-            self.particles.add_particle(
-                rng.gen::<f32>() * 25.0,
-                rng.gen::<f32>() * 25.0,
-                1.0 * (i + 1) as f32,
-            );
+            self.particles
+                .add_particle(rng.gen::<f32>() * 25.0, rng.gen::<f32>() * 25.0, 5.0);
         }
     }
 
@@ -485,7 +492,7 @@ impl BarnesHut {
         while let Some(current_node) = stack.pop() {
             let distance = node.center_of_mass.distance(&current_node.center_of_mass);
 
-            if distance < 1e-8 {
+            if distance < 1e-3 {
                 continue;
             }
 

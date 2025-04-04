@@ -46,15 +46,7 @@ export class ParticleVisualization {
 
     // Setup scene geometry
     this.scene = new THREE.Scene();
-
-    const sphere = new THREE.SphereGeometry(1, 16, 8);
-    const material = new THREE.MeshStandardMaterial();
-    this.particles = new THREE.InstancedMesh(
-      sphere,
-      material,
-      this.simulation.numParticles(),
-    );
-    this.scene.add(this.particles);
+    this.initializeParticles();
 
     // Add scene lights
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -68,21 +60,67 @@ export class ParticleVisualization {
     this.stats = Stats();
     this.stats.showPanel(0);
 
-    // Setup configuration GUI
-    this.configPanel = new GUI();
-    this.simulation.bind(this.configPanel);
+    this.initializeControlPanel();
   }
+
+  initializeParticles() {
+    if (this.particles != null) {
+      this.scene.remove(this.particles);
+    }
+    const sphere = new THREE.SphereGeometry(1, 16, 8);
+    const material = new THREE.MeshStandardMaterial();
+    this.particles = new THREE.InstancedMesh(
+      sphere,
+      material,
+      this.simulation.numParticles(),
+    );
+    this.scene.add(this.particles);
+  }
+
+  initializeControlPanel() {
+    this.configPanel = new GUI();
+    this.configPanel.add(this, "pause");
+    this.configPanel.add(this, "resume");
+    this.configPanel.add(this, "step");
+    this.configPanel.add(this, "stepSize");
+    this.configPanel.add(this, "reset");
+
+    const simulationPanel = this.configPanel.addFolder("Simulation");
+    this.simulation.bind(simulationPanel);
+  }
+
 
   initializeDom() {
     document.body.appendChild(this.renderer.domElement);
     document.body.appendChild(this.stats.dom);
   }
 
+  pause() {
+    this.paused = true;
+  }
+
+  resume() {
+    this.paused = false;
+  }
+
+  step() {
+    if (this.paused) {
+      this.simulation.updateParameters();
+      this.simulation.step(this.stepSize);
+    }
+  }
+
   render() {
-    this.simulation.updateParameters();
-    this.simulation.step(this.clock.getDelta());
+    const delta = this.clock.getDelta();
+
+    if (!this.paused) {
+      this.simulation.updateParameters();
+      this.simulation.step(delta);
+    }
 
     let translation = new THREE.Matrix4();
+
+    console.log(this.simulation.getParticle(0));
 
     for (let i = 0; i < this.simulation.numParticles(); i++) {
       const particle = this.simulation.getParticle(i);
@@ -113,6 +151,7 @@ export class ParticleVisualization {
 
   reset() {
     // invariant: the simulation should reinitialize with the latest values of the configuration.
+    this.initializeParticles();
     this.simulation.reinitialize();
   }
 
@@ -126,4 +165,7 @@ export class ParticleVisualization {
   clock: THREE.Clock;
   stats: Stats;
   configPanel: GUI;
+
+  paused: boolean = false;
+  stepSize: number = 0.016;
 }
