@@ -1,5 +1,5 @@
 import { SimulationConfig as BhSimulationConfig, BarnesHutCradle } from "./barnesHut";
-import { SimulationConfig as FSimulationConfig, SimulationCradle } from "./fluidSimulation";
+import { SimulationConfig as FSimulationConfig, FluidCradle } from "./fluidSimulation";
 import { ParticleVisualization } from "./particleVisualization";
 
 const bhConfig = new BhSimulationConfig();
@@ -20,7 +20,7 @@ fConfig.initialVelocity = 0.0;
 
 
 const barnesHut = new BarnesHutCradle(bhConfig);
-const fluidSimulation = new SimulationCradle(fConfig);
+const fluidSimulation = new FluidCradle(fConfig);
 
 const particleVisualization = new ParticleVisualization(fluidSimulation);
 

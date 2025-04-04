@@ -42,7 +42,7 @@ class SimulationBuffers {
   }
 }
 
-export class SimulationCradle implements ParticleSimulation {
+export class FluidCradle implements ParticleSimulation {
   constructor(config: SimulationConfig) {
     this.config_ = config;
 
