@@ -1,6 +1,7 @@
+import GUI from "lil-gui";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import Stats from "three/examples/jsm/libs/stats.module"
+import Stats from "three/examples/jsm/libs/stats.module";
 
 export type Particle = {
   x: number;
@@ -9,15 +10,22 @@ export type Particle = {
 };
 
 export interface ParticleSimulation {
+  // updates any dynamic values in the simulation prior to the step
+  // TODO (sanjay) should this be part of the step?
+  updateParameters: () => void;
   // steps the simulation forward in time
   step: (dt: number) => void;
-
+  // returns the color to render the particle as
+  particleColor: (index: number) => number;
+  // returns the number of particles
+  numParticles: () => number;
   // returns the particle at the given index
   getParticle: (index: number) => Particle;
+  // binds the configuration object for the simulation and manages updates.
+  bind: (gui: GUI) => void;
 
-  particleColor: (index: number) => number;
-
-  numParticles: () => number;
+  // Resets the simulation to a known state
+  reinitialize: () => void;
 }
 
 export class ParticleVisualization {
@@ -38,15 +46,7 @@ export class ParticleVisualization {
 
     // Setup scene geometry
     this.scene = new THREE.Scene();
-
-    const sphere = new THREE.SphereGeometry(1, 16, 8);
-    const material = new THREE.MeshStandardMaterial();
-    this.particles = new THREE.InstancedMesh(
-      sphere,
-      material,
-      this.simulation.numParticles(),
-    );
-    this.scene.add(this.particles);
+    this.initializeParticles();
 
     // Add scene lights
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -59,17 +59,68 @@ export class ParticleVisualization {
 
     this.stats = Stats();
     this.stats.showPanel(0);
+
+    this.initializeControlPanel();
   }
+
+  initializeParticles() {
+    if (this.particles != null) {
+      this.scene.remove(this.particles);
+    }
+    const sphere = new THREE.SphereGeometry(1, 16, 8);
+    const material = new THREE.MeshStandardMaterial();
+    this.particles = new THREE.InstancedMesh(
+      sphere,
+      material,
+      this.simulation.numParticles(),
+    );
+    this.scene.add(this.particles);
+  }
+
+  initializeControlPanel() {
+    this.configPanel = new GUI();
+    this.configPanel.add(this, "pause");
+    this.configPanel.add(this, "resume");
+    this.configPanel.add(this, "step");
+    this.configPanel.add(this, "stepSize");
+    this.configPanel.add(this, "reset");
+
+    const simulationPanel = this.configPanel.addFolder("Simulation");
+    this.simulation.bind(simulationPanel);
+  }
+
 
   initializeDom() {
     document.body.appendChild(this.renderer.domElement);
     document.body.appendChild(this.stats.dom);
   }
 
+  pause() {
+    this.paused = true;
+  }
+
+  resume() {
+    this.paused = false;
+  }
+
+  step() {
+    if (this.paused) {
+      this.simulation.updateParameters();
+      this.simulation.step(this.stepSize);
+    }
+  }
+
   render() {
-    this.simulation.step(this.clock.getDelta());
+    const delta = this.clock.getDelta();
+
+    if (!this.paused) {
+      this.simulation.updateParameters();
+      this.simulation.step(delta);
+    }
 
     let translation = new THREE.Matrix4();
+
+    console.log(this.simulation.getParticle(0));
 
     for (let i = 0; i < this.simulation.numParticles(); i++) {
       const particle = this.simulation.getParticle(i);
@@ -98,6 +149,12 @@ export class ParticleVisualization {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  reset() {
+    // invariant: the simulation should reinitialize with the latest values of the configuration.
+    this.initializeParticles();
+    this.simulation.reinitialize();
+  }
+
   simulation: ParticleSimulation;
 
   renderer: THREE.WebGLRenderer;
@@ -107,4 +164,8 @@ export class ParticleVisualization {
   controls: OrbitControls;
   clock: THREE.Clock;
   stats: Stats;
+  configPanel: GUI;
+
+  paused: boolean = false;
+  stepSize: number = 0.016;
 }
