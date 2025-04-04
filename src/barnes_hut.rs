@@ -1,5 +1,5 @@
 use rand::Rng;
-use std::vec;
+use std::{u64::MAX, vec};
 use wasm_bindgen::prelude::*;
 
 /// @brief Point is a struct that holds the x and y coordinates of a point.
@@ -376,6 +376,22 @@ impl BarnesHut {
 
     pub fn set_max_particles_per_node(&mut self, value: usize) {
         self.max_particles_per_node = value;
+    }
+
+    pub fn reinitialize(
+        &mut self,
+        num_particles: usize,
+        theta: f32,
+        max_depth: usize,
+        max_particles_per_node: usize,
+        gravitational_constant: f32,
+    ) {
+        self.theta = theta;
+        self.max_depth = max_depth;
+        self.max_particles_per_node = max_particles_per_node;
+        self.gravitational_constant = gravitational_constant;
+
+        self.particles = ParticleBuffer::new(num_particles);
     }
 
     pub fn step(&mut self, time_step: f32) {

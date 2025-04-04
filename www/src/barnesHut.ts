@@ -27,16 +27,7 @@ export class BarnesHutCradle implements ParticleSimulation {
     this.initialize();
   }
 
-  initialize(): void {
-    this.simulation_ = BarnesHut.new(
-      this.config_.numParticles,
-      this.config_.theta,
-      this.config_.maxDepth,
-      this.config_.maxParticlesPerNode,
-    );
-
-    this.simulation_.init_cube(this.config_.numParticles);
-
+  initializeBuffers(): void {
     this.buffers_ = new SimulationBuffer(
       new Float32Array(
         memory.buffer,
@@ -51,16 +42,38 @@ export class BarnesHutCradle implements ParticleSimulation {
     );
   }
 
-  bind(gui: GUI) : void {
+  initialize(): void {
+    this.simulation_ = BarnesHut.new(
+      this.config_.numParticles,
+      this.config_.theta,
+      this.config_.maxDepth,
+      this.config_.maxParticlesPerNode,
+      this.config_.gravitationalConstant,
+    );
+
+    this.simulation_.init_cube(this.config_.numParticles);
+    this.initializeBuffers();
+  }
+
+  bind(gui: GUI): void {
     gui.add(this.config_, "gravitationalConstant", 0.1, 50);
     gui.add(this.config_, "theta", 0, 1);
     gui.add(this.config_, "maxParticlesPerNode", 1, 5);
+
+    const simulationGui = gui.addFolder("Simulation Parameters");
+    simulationGui.add(this.config_, "numParticles");
+    simulationGui.add(this.config_, "maxDepth");
+    simulationGui.add(this, "reinitialize");
   }
 
   updateParameters(): void {
-    this.simulation_.set_gravitational_constant(this.config_.gravitationalConstant);
+    this.simulation_.set_gravitational_constant(
+      this.config_.gravitationalConstant,
+    );
     this.simulation_.set_theta(this.config_.theta);
-    this.simulation_.set_max_particles_per_node(this.config_.maxParticlesPerNode);
+    this.simulation_.set_max_particles_per_node(
+      this.config_.maxParticlesPerNode,
+    );
   }
 
   step(time: number): void {
@@ -68,7 +81,16 @@ export class BarnesHutCradle implements ParticleSimulation {
   }
 
   reinitialize(): void {
-    // TODO (sanjay) will require reallocating buffers with the correct number of particles.
+    this.simulation_.reinitialize(
+      this.config_.numParticles,
+      this.config_.theta,
+      this.config_.maxDepth,
+      this.config_.numParticles,
+      this.config_.gravitationalConstant,
+    );
+    this.initializeBuffers();
+    // TODO (sanjay) why does init cube take the number of particles as a configuration
+    this.simulation_.init_cube(this.config_.numParticles);
   }
 
   getParticle(index: number): Particle {
