@@ -18,11 +18,10 @@ fConfig.particleElasticity = 0.95;
 fConfig.particleRadius = 1.0;
 fConfig.initialVelocity = 0.0;
 
-
 const barnesHut = new BarnesHutCradle(bhConfig);
 const fluidSimulation = new FluidCradle(fConfig);
 
-const particleVisualization = new ParticleVisualization(fluidSimulation);
+const particleVisualization = new ParticleVisualization(barnesHut);
 
 particleVisualization.initializeDom()
 
