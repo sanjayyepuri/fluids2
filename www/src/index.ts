@@ -7,7 +7,7 @@ bhConfig.numParticles = 10;
 bhConfig.theta = 0.5;
 bhConfig.maxDepth = 4;
 bhConfig.maxParticlesPerNode = 4;
-bhConfig.gravitationalConstant = 0.1;
+bhConfig.gravitationalConstant = 5.0;
 
 
 const fConfig = new FSimulationConfig();
