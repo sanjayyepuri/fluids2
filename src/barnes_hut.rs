@@ -1,8 +1,7 @@
 use rand::Rng;
-use std::{u64::MAX, vec};
+use std::vec;
 use wasm_bindgen::prelude::*;
 
-use web_sys::console;
 
 /// @brief Point is a struct that holds the x and y coordinates of a point.
 #[derive(Clone, Debug)]
