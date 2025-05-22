@@ -118,23 +118,34 @@ export class ParticleVisualization {
       this.simulation.step(delta);
     }
 
-    let translation = new THREE.Matrix4();
-
-    console.log(this.simulation.getParticle(0));
+    let matrix = new THREE.Matrix4();
+    const baseScale = 0.5; // Base size of the particle
+    const focalLength = 500; // Affects perspective effect; adjust as needed
 
     for (let i = 0; i < this.simulation.numParticles(); i++) {
       const particle = this.simulation.getParticle(i);
-      this.particles.setMatrixAt(
-        i,
-        translation.makeTranslation(particle.x, particle.y, particle.z),
+
+      // Simple perspective scaling: scale = focalLength / (focalLength + z)
+      // Add a small epsilon to particle.z if it can be zero and focalLength is also small, to avoid division by zero.
+      // However, with typical z values and focalLength, (focalLength + particle.z) should be positive.
+      // We also clamp the scale to avoid extremely large/small particles.
+      let scale = focalLength / (focalLength + particle.z);
+      scale = Math.max(0.1, Math.min(scale, 5.0)) * baseScale; // Clamp scale and apply base scale
+
+      // Create a matrix that includes translation and scaling
+      matrix.compose(
+        new THREE.Vector3(particle.x, particle.y, particle.z), // position
+        new THREE.Quaternion(), // rotation (identity)
+        new THREE.Vector3(scale, scale, scale), // scale
       );
+      this.particles.setMatrixAt(i, matrix);
+
       this.particles.setColorAt(
         i,
         new THREE.Color(this.simulation.particleColor(i)),
       );
     }
 
-    this.particles.scale.setScalar(1);
     this.particles.instanceMatrix.needsUpdate = true;
     this.particles.instanceColor.needsUpdate = true;
 

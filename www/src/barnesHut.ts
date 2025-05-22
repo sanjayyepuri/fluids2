@@ -14,10 +14,12 @@ export class SimulationConfig {
 class SimulationBuffer {
   positionX: Float32Array;
   positionY: Float32Array;
+  positionZ: Float32Array;
 
-  constructor(positionX: Float32Array, positionY: Float32Array) {
+  constructor(positionX: Float32Array, positionY: Float32Array, positionZ: Float32Array) {
     this.positionX = positionX;
     this.positionY = positionY;
+    this.positionZ = positionZ;
   }
 }
 
@@ -37,6 +39,11 @@ export class BarnesHutCradle implements ParticleSimulation {
       new Float32Array(
         memory.buffer,
         this.simulation_.get_raw_y_coordinates(),
+        this.config_.numParticles,
+      ),
+      new Float32Array(
+        memory.buffer,
+        this.simulation_.get_raw_z_coordinates(),
         this.config_.numParticles,
       ),
     );
@@ -80,6 +87,12 @@ export class BarnesHutCradle implements ParticleSimulation {
     this.simulation_.step(time);
     // TODO (sanjay) for some reason for large numbers of particles the buffers die.
     this.initializeBuffers();
+
+    const energy = this.simulation_.get_system_energy();
+    const energyElement = document.getElementById("system-energy");
+    if (energyElement) {
+      energyElement.textContent = energy.toFixed(2);
+    }
   }
 
   reinitialize(): void {
@@ -99,7 +112,7 @@ export class BarnesHutCradle implements ParticleSimulation {
     return {
       x: this.buffers_.positionX[index],
       y: this.buffers_.positionY[index],
-      z: 0,
+      z: this.buffers_.positionZ[index],
     };
   }
 
