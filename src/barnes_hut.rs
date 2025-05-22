@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 
 
 /// @brief Point is a struct that holds the x and y coordinates of a point.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 #[wasm_bindgen]
 pub struct Point {
     x: f32,
@@ -644,7 +644,7 @@ impl BarnesHut {
                 mass: particle_i_mass,          // Mass of particle i
                 // These fields are not strictly needed for `node` in `compute_forces` context,
                 // but are part of QuadTreeNode struct.
-                bounding_box: BoundingBox { min: particle_i_pos, max: particle_i_pos },
+                bounding_box: BoundingBox { min: particle_i_pos, max: particle_i_pos.clone() },
                 particle_indices: vec![i], // Technically refers to index in `current_particles`
                 children: [None, None, None, None, None, None, None, None],
             };
