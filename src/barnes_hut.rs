@@ -555,6 +555,109 @@ impl BarnesHut {
         kinetic_energy + potential_energy
     }
 
+    #[wasm_bindgen]
+    pub fn get_system_momentum(&self) -> Point {
+        let mut total_px = 0.0;
+        let mut total_py = 0.0;
+        let mut total_pz = 0.0;
+
+        for i in 0..self.particles.size() {
+            let mass = self.particles.mass[i];
+            total_px += mass * self.particles.velocity_x[i];
+            total_py += mass * self.particles.velocity_y[i];
+            total_pz += mass * self.particles.velocity_z[i];
+        }
+
+        Point { x: total_px, y: total_py, z: total_pz }
+    }
+
+    /// Calculates gravitational forces on all particles based on their current state.
+    ///
+    /// Args:
+    ///     current_particles: The state of particles (positions, masses) for which to calculate forces.
+    ///     forces_x_out: Output vector to store the x-component of the force on each particle.
+    ///     forces_y_out: Output vector to store the y-component of the force on each particle.
+    ///     forces_z_out: Output vector to store the z-component of the force on each particle.
+    fn calculate_forces_for_state(
+        &self,
+        current_particles: &ParticleBuffer,
+        forces_x_out: &mut Vec<f32>,
+        forces_y_out: &mut Vec<f32>,
+        forces_z_out: &mut Vec<f32>,
+    ) {
+        if current_particles.size() == 0 {
+            return;
+        }
+
+        let tree = QuadTree::new(
+            current_particles,
+            self.max_depth,
+            self.max_particles_per_node,
+        );
+
+        forces_x_out.clear();
+        forces_y_out.clear();
+        forces_z_out.clear();
+        forces_x_out.resize(current_particles.size(), 0.0);
+        forces_y_out.resize(current_particles.size(), 0.0);
+        forces_z_out.resize(current_particles.size(), 0.0);
+
+        // Find all the leaf nodes. Each leaf node effectively represents one or more particles
+        // that are close enough to be treated as a single point mass for force calculations *from its perspective*.
+        // However, for RK4, we need the force on *each individual particle*.
+        // The current `find_leaf_nodes` and `compute_forces` are structured around calculating force for a node.
+        // We need to adapt this to calculate force for each particle *within* those leaf nodes,
+        // or better, directly for each particle index against the tree.
+
+        // Let's iterate through each particle in current_particles and calculate force on it.
+        for i in 0..current_particles.size() {
+            // We need a QuadTreeNode-like structure or just the particle's properties (CoM, mass)
+            // to pass to the existing compute_forces.
+            // The `node` in `compute_forces(force: &mut Point, node: &QuadTreeNode, root: &QuadTreeNode)`
+            // is the particle/node *experiencing* the force.
+            // The `root` is the tree of all other particles/nodes *exerting* the force.
+
+            // Create a temporary "node" representing the current particle i
+            // Its bounding box isn't strictly needed for this force calculation if we assume it's a point.
+            // Its center of mass is its position.
+            let particle_i_pos = Point {
+                x: current_particles.x[i],
+                y: current_particles.y[i],
+                z: current_particles.z[i],
+            };
+            let particle_i_mass = current_particles.mass[i];
+
+            // The `compute_forces` method calculates force on a `QuadTreeNode`.
+            // To use it directly, we'd wrap particle `i` in a temporary `QuadTreeNode`.
+            // This seems a bit inefficient if done for every particle.
+            // Let's consider what `compute_forces` needs from `node`:
+            // `node.center_of_mass` and `node.mass`.
+            // The other parts of `node` (bounding_box, particle_indices, children) are not
+            // directly used by `compute_forces` for the `node` argument itself, but for `current_node`.
+
+            let mut net_force_on_particle_i = Point { x: 0.0, y: 0.0, z: 0.0 };
+
+            // The existing `compute_forces` calculates the force exerted *by* the tree (`root`)
+            // *on* a given `node`. So, `particle_i_node_view` represents the particle `i`.
+             let particle_i_node_view = QuadTreeNode {
+                center_of_mass: particle_i_pos, // Position of particle i
+                mass: particle_i_mass,          // Mass of particle i
+                // These fields are not strictly needed for `node` in `compute_forces` context,
+                // but are part of QuadTreeNode struct.
+                bounding_box: BoundingBox { min: particle_i_pos, max: particle_i_pos },
+                particle_indices: vec![i], // Technically refers to index in `current_particles`
+                children: [None, None, None, None, None, None, None, None],
+            };
+
+            self.compute_forces(&mut net_force_on_particle_i, &particle_i_node_view, &tree.root);
+            
+            forces_x_out[i] = net_force_on_particle_i.x;
+            forces_y_out[i] = net_force_on_particle_i.y;
+            forces_z_out[i] = net_force_on_particle_i.z;
+        }
+    }
+
+
     pub fn init_cube(&mut self, num_particles: usize) {
         let mut rng = rand::thread_rng();
 
@@ -949,5 +1052,60 @@ mod tests {
         let expected_pe_clamped = -1.0 * 1.0 * 2.0 / 1e-3; // -2000.0
         let calculated_energy_clamped = sim_same_loc.get_system_energy();
          assert!((calculated_energy_clamped - expected_pe_clamped).abs() < 1e-5, "Clamped energy: expected {}, got {}", expected_pe_clamped, calculated_energy_clamped);
+    }
+
+    #[test]
+    fn test_system_momentum() {
+        let mut sim = BarnesHut::new(3, 0.5, 5, 1, 1.0);
+
+        // Particle 1: m=1, p=(0,0,0), v=(1,2,3)
+        sim.particles.add_particle(0.0, 0.0, 0.0, 1.0);
+        sim.particles.velocity_x[0] = 1.0;
+        sim.particles.velocity_y[0] = 2.0;
+        sim.particles.velocity_z[0] = 3.0;
+        // p1 = (1*1, 1*2, 1*3) = (1, 2, 3)
+
+        // Particle 2: m=2, p=(1,0,0), v=(-1,0.5,-0.5)
+        sim.particles.add_particle(1.0, 0.0, 0.0, 2.0);
+        sim.particles.velocity_x[1] = -1.0;
+        sim.particles.velocity_y[1] = 0.5;
+        sim.particles.velocity_z[1] = -0.5;
+        // p2 = (2*-1, 2*0.5, 2*-0.5) = (-2, 1, -1)
+
+        // Particle 3: m=3, p=(0,1,0), v=(0,0,0)
+        sim.particles.add_particle(0.0, 1.0, 0.0, 3.0);
+        // p3 = (3*0, 3*0, 3*0) = (0, 0, 0)
+        
+        // Total expected momentum:
+        // Px = 1 + (-2) + 0 = -1.0
+        // Py = 2 + 1    + 0 =  3.0
+        // Pz = 3 + (-1)  + 0 =  2.0
+        let expected_momentum = Point { x: -1.0, y: 3.0, z: 2.0 };
+        let calculated_momentum = sim.get_system_momentum();
+
+        assert!((calculated_momentum.x - expected_momentum.x).abs() < 1e-5, "Momentum X mismatch: expected {}, got {}", expected_momentum.x, calculated_momentum.x);
+        assert!((calculated_momentum.y - expected_momentum.y).abs() < 1e-5, "Momentum Y mismatch: expected {}, got {}", expected_momentum.y, calculated_momentum.y);
+        assert!((calculated_momentum.z - expected_momentum.z).abs() < 1e-5, "Momentum Z mismatch: expected {}, got {}", expected_momentum.z, calculated_momentum.z);
+
+        // Test case: Zero total momentum
+        let mut sim_zero_momentum = BarnesHut::new(2, 0.5, 5, 1, 1.0);
+        // Particle A: m=1, v=(1,1,1) -> pA = (1,1,1)
+        sim_zero_momentum.particles.add_particle(0.0,0.0,0.0, 1.0);
+        sim_zero_momentum.particles.velocity_x[0] = 1.0;
+        sim_zero_momentum.particles.velocity_y[0] = 1.0;
+        sim_zero_momentum.particles.velocity_z[0] = 1.0;
+
+        // Particle B: m=1, v=(-1,-1,-1) -> pB = (-1,-1,-1)
+        sim_zero_momentum.particles.add_particle(1.0,1.0,1.0, 1.0);
+        sim_zero_momentum.particles.velocity_x[1] = -1.0;
+        sim_zero_momentum.particles.velocity_y[1] = -1.0;
+        sim_zero_momentum.particles.velocity_z[1] = -1.0;
+        
+        // Total expected momentum: (0,0,0)
+        let expected_zero_momentum = Point { x: 0.0, y: 0.0, z: 0.0 };
+        let calculated_zero_momentum = sim_zero_momentum.get_system_momentum();
+        assert!((calculated_zero_momentum.x - expected_zero_momentum.x).abs() < 1e-5, "Zero Momentum X mismatch: expected {}, got {}", expected_zero_momentum.x, calculated_zero_momentum.x);
+        assert!((calculated_zero_momentum.y - expected_zero_momentum.y).abs() < 1e-5, "Zero Momentum Y mismatch: expected {}, got {}", expected_zero_momentum.y, calculated_zero_momentum.y);
+        assert!((calculated_zero_momentum.z - expected_zero_momentum.z).abs() < 1e-5, "Zero Momentum Z mismatch: expected {}, got {}", expected_zero_momentum.z, calculated_zero_momentum.z);
     }
 }

@@ -83,16 +83,24 @@ export class BarnesHutCradle implements ParticleSimulation {
     );
   }
 
+  latestEnergy: number = 0;
+  latestMomentum: { x: number; y: number; z: number } | null = null;
+
   step(time: number): void {
     this.simulation_.step(time);
     // TODO (sanjay) for some reason for large numbers of particles the buffers die.
     this.initializeBuffers();
 
-    const energy = this.simulation_.get_system_energy();
-    const energyElement = document.getElementById("system-energy");
-    if (energyElement) {
-      energyElement.textContent = energy.toFixed(2);
-    }
+    this.latestEnergy = this.simulation_.get_system_energy();
+    const momentumPoint = this.simulation_.get_system_momentum();
+    this.latestMomentum = { x: momentumPoint.x, y: momentumPoint.y, z: momentumPoint.z };
+    // Ensure to free the Point manually if it's not done by wasm-bindgen automatically
+    // and if Point is not a plain JS object returned by value.
+    // Assuming Point from wasm_bindgen is a JS object that can be GC'd, or if it's on Rust heap,
+    // that it's freed by its destructor when the JS wrapper is GC'd.
+    // If `get_system_momentum` returns a pointer or an object that needs explicit freeing,
+    // and if `momentumPoint` is such an object, then `momentumPoint.free()` might be needed.
+    // For now, assuming it's a JS object or handled by wasm-bindgen's wrappers.
   }
 
   reinitialize(): void {
@@ -116,6 +124,14 @@ export class BarnesHutCradle implements ParticleSimulation {
     };
   }
 
+  getSystemEnergy(): number {
+    return this.latestEnergy;
+  }
+
+  getSystemMomentum(): { x: number; y: number; z: number } {
+    return this.latestMomentum ?? { x: 0, y: 0, z: 0 };
+  }
+
   particleColor(index: number): number {
     return 0xff0000;
   }
@@ -127,4 +143,6 @@ export class BarnesHutCradle implements ParticleSimulation {
   config_: SimulationConfig;
   simulation_: BarnesHut;
   buffers_: SimulationBuffer;
+  latestEnergy: number = 0;
+  latestMomentum: { x: number; y: number; z: number } | null = null;
 }
