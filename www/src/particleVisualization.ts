@@ -23,7 +23,10 @@ export interface ParticleSimulation {
   getParticle: (index: number) => Particle;
   // binds the configuration object for the simulation and manages updates.
   bind: (gui: GUI) => void;
-
+  // returns the current system energy
+  getSystemEnergy: () => number;
+  // returns the current system momentum
+  getSystemMomentum: () => { x: number; y: number; z: number };
   // Resets the simulation to a known state
   reinitialize: () => void;
 }
@@ -58,9 +61,44 @@ export class ParticleVisualization {
     this.clock = new THREE.Clock();
 
     this.stats = Stats();
-    this.stats.showPanel(0);
+    // Default panels: 0: fps, 1: ms, 2: mb
+    this.energyPanel = new Stats.Panel('Energy', '#ff8', '#221'); // Name, fg color, bg color
+    this.stats.addPanel(this.energyPanel);
+    this.momentumXPanel = new Stats.Panel('Px', '#f8f', '#212');
+    this.stats.addPanel(this.momentumXPanel);
+    this.momentumYPanel = new Stats.Panel('Py', '#f8f', '#212');
+    this.stats.addPanel(this.momentumYPanel);
+    this.momentumZPanel = new Stats.Panel('Pz', '#f8f', '#212');
+    this.stats.addPanel(this.momentumZPanel);
+    this.stats.showPanel(0); // Start with FPS, user can cycle through (Energy is 3, Px 4, Py 5, Pz 6)
 
     this.initializeControlPanel();
+  }
+
+  updateEnergyStat(energy: number) {
+    if (this.energyPanel) {
+      // For stats.js, the first argument to update is the value,
+      // and the second is the maxValue for the graph.
+      // We might need to normalize or find a dynamic maxValue later.
+      // For now, let's pass a reasonably high number for maxValue or just the value itself
+      // if the panel text display is sufficient.
+      // Let's assume a large max value for the graph, or just update the text part.
+      // The text part will show the 'energy' value regardless of maxValue for graph.
+      this.energyPanel.update(energy, 2000); // Assuming energy values might go up to 2000 for graph scale
+    }
+  }
+
+  updateMomentumStats(momentum: { x: number; y: number; z: number }) {
+    if (this.momentumXPanel) {
+      // Assuming momentum values could be e.g. +/- 500 for graph scale
+      this.momentumXPanel.update(momentum.x, 500);
+    }
+    if (this.momentumYPanel) {
+      this.momentumYPanel.update(momentum.y, 500);
+    }
+    if (this.momentumZPanel) {
+      this.momentumZPanel.update(momentum.z, 500);
+    }
   }
 
   initializeParticles() {
@@ -118,29 +156,47 @@ export class ParticleVisualization {
       this.simulation.step(delta);
     }
 
-    let translation = new THREE.Matrix4();
-
-    console.log(this.simulation.getParticle(0));
+    let matrix = new THREE.Matrix4();
+    const baseScale = 0.5; // Base size of the particle
+    const focalLength = 500; // Affects perspective effect; adjust as needed
 
     for (let i = 0; i < this.simulation.numParticles(); i++) {
       const particle = this.simulation.getParticle(i);
-      this.particles.setMatrixAt(
-        i,
-        translation.makeTranslation(particle.x, particle.y, particle.z),
+
+      // Simple perspective scaling: scale = focalLength / (focalLength + z)
+      // Add a small epsilon to particle.z if it can be zero and focalLength is also small, to avoid division by zero.
+      // However, with typical z values and focalLength, (focalLength + particle.z) should be positive.
+      // We also clamp the scale to avoid extremely large/small particles.
+      let scale = focalLength / (focalLength + particle.z);
+      scale = Math.max(0.1, Math.min(scale, 5.0)) * baseScale; // Clamp scale and apply base scale
+
+      // Create a matrix that includes translation and scaling
+      matrix.compose(
+        new THREE.Vector3(particle.x, particle.y, particle.z), // position
+        new THREE.Quaternion(), // rotation (identity)
+        new THREE.Vector3(scale, scale, scale), // scale
       );
+      this.particles.setMatrixAt(i, matrix);
+
       this.particles.setColorAt(
         i,
         new THREE.Color(this.simulation.particleColor(i)),
       );
     }
 
-    this.particles.scale.setScalar(1);
     this.particles.instanceMatrix.needsUpdate = true;
     this.particles.instanceColor.needsUpdate = true;
 
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
-    this.stats.update();
+
+    const energy = this.simulation.getSystemEnergy();
+    this.updateEnergyStat(energy);
+
+    const momentum = this.simulation.getSystemMomentum();
+    this.updateMomentumStats(momentum);
+
+    this.stats.update(); // Update all stats panels
   }
 
   resize() {
@@ -164,6 +220,10 @@ export class ParticleVisualization {
   controls: OrbitControls;
   clock: THREE.Clock;
   stats: Stats;
+  energyPanel: Stats.Panel;
+  momentumXPanel: Stats.Panel;
+  momentumYPanel: Stats.Panel;
+  momentumZPanel: Stats.Panel;
   configPanel: GUI;
 
   paused: boolean = false;

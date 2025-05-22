@@ -132,6 +132,16 @@ export class FluidCradle implements ParticleSimulation {
     return this.config_.numParticles;
   }
 
+  public getSystemEnergy(): number {
+      // TODO: Implement actual energy calculation for fluid simulation if needed.
+      return 0.0; // Dummy value
+  }
+
+  public getSystemMomentum(): { x: number; y: number; z: number } {
+      // TODO: Implement actual momentum calculation for fluid simulation if needed.
+      return { x: 0.0, y: 0.0, z: 0.0 }; // Dummy value
+  }
+
   simulation_: FluidSimulation;
   config_: SimulationConfig;
   buffers_: SimulationBuffers;
